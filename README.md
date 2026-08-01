@@ -50,24 +50,36 @@ maps, whole boards) and narrowest where it was already doing bitboard work. `pie
 is the floor at 16x, because both libraries end up allocating 32 objects and a dict, and
 there's no way around that from C either.
 
+**Those are primitives. Whole pipelines land lower.** Reading a PGN file end to end is
+**7.8x** (410k moves/sec against 52k), because `pgn.py` is still Python and the parser
+starts to dominate once the board work gets cheap. Budget somewhere between 8x and 30x
+for real work, and the big numbers above for tight loops over the board itself.
+
 ## Should you use this?
 
-**Probably not, if** you need Chess960, crazyhouse or any other variant, Syzygy
-tablebases, SVG board rendering, or a battle-hardened async engine client. python-chess
-has all of that. This doesn't, and some of it never will.
+**No, if** you need Chess960 or any other variant, Syzygy tablebases, or SVG board
+rendering. python-chess has all three and this has none of them.
 
-**Yes, if** any of these bite:
+**Also no, if you lean on the engine client.** Basic `analyse` and `play` work, but
+`multipv` silently gives you one line, reads have no timeout, and UCI option metadata
+isn't parsed. python-chess's engine module is seven times the size and it earns it. See
+[Rough edges](#rough-edges) before you commit to this for engine work.
 
-- **The GPL is a problem.** python-chess is GPL-3.0+. If you ship closed source or
-  license under something incompatible, that's a real blocker, not a philosophical one.
-  This is MIT.
-- **You're doing volume.** Bulk PGN ingest, position mining, opening-tree building,
-  anything that touches millions of positions. Two orders of magnitude is the difference
-  between an overnight job and a coffee break.
-- **You want a small dependency surface.** Standard library only. A C compiler at build
-  time, then nothing.
+**Yes, if:**
 
-If none of that applies, `pip install chess` and get on with your life.
+- **GPL is a blocker.** python-chess is GPL-3.0+, this is MIT. If you ship closed source
+  that's the entire conversation, and no amount of benchmarking matters. (One asterisk,
+  on the PolyGlot constants — see [License](#license).)
+- **You're moving volume over the board itself.** Position mining, opening trees, tree
+  search, anything hammering `legal_moves` / `push` / `pop` / `fen` / `zobrist_hash`.
+  That's where the 27x-and-up numbers live.
+- **You want a thin dependency surface.** Standard library only, plus a C compiler once
+  at build time.
+
+Note what's *not* on that list: bulk PGN parsing is only ~8x, so if that's your whole
+workload the win is real but modest.
+
+If none of it applies, `pip install chess` and get on with your life.
 
 ## Install
 
