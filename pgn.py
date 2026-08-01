@@ -8,6 +8,7 @@ from io import StringIO
 import logging
 import re
 
+from ._core import tokenize_movetext as _tokenize_movetext
 from .board import Board
 from .move import Move
 from .constants import WHITE
@@ -15,6 +16,11 @@ from .constants import WHITE
 logger = logging.getLogger(__name__)
 
 RESULT_TOKENS = ("1-0", "0-1", "1/2-1/2", "*")
+
+# Compiled once: _parse_movetext matches every token against these.
+MOVE_NUMBER_PATTERN = re.compile(r'^\d+\.+$')
+RESULT_PATTERN = re.compile(r'\s*(1-0|0-1|1/2-1/2|\*)\s*$')
+NAG_MAP = {"!": 1, "?": 2, "!!": 3, "??": 4, "!?": 5, "?!": 6}
 
 
 class Headers(dict):
@@ -511,7 +517,7 @@ def _parse_movetext(game: Game, movetext: str, strict: bool = False) -> None:
     """Parse movetext and add moves to game."""
     # Take the result off the end, and record it. The movetext is the
     # authoritative source when the tag pair is missing or still a placeholder.
-    result_match = re.search(r'\s*(1-0|0-1|1/2-1/2|\*)\s*$', movetext)
+    result_match = RESULT_PATTERN.search(movetext)
     if result_match:
         movetext = movetext[:result_match.start()]
         result = result_match.group(1)
@@ -530,7 +536,7 @@ def _parse_movetext(game: Game, movetext: str, strict: bool = False) -> None:
         i += 1
 
         # Skip move numbers
-        if re.match(r'^\d+\.+$', token):
+        if MOVE_NUMBER_PATTERN.match(token):
             continue
 
         if token.startswith("{"):
@@ -562,9 +568,8 @@ def _parse_movetext(game: Game, movetext: str, strict: bool = False) -> None:
                 node, board = variation_stack.pop()
             continue
 
-        if token in ("!", "?", "!!", "??", "!?", "?!"):
-            nag_map = {"!": 1, "?": 2, "!!": 3, "??": 4, "!?": 5, "?!": 6}
-            node.nags.append(nag_map[token])
+        if token in NAG_MAP:
+            node.nags.append(NAG_MAP[token])
             continue
 
         # A stray result token inside the movetext ends this game's moves.
@@ -590,56 +595,18 @@ def _parse_movetext(game: Game, movetext: str, strict: bool = False) -> None:
         board.push(move)
 
 
-def _tokenize_movetext(movetext: str) -> List[str]:
-    """Tokenize movetext into individual tokens."""
-    tokens = []
-    current = ""
-    in_comment = False
-
-    for char in movetext:
-        if in_comment:
-            current += char
-            if char == "}":
-                tokens.append(current)
-                current = ""
-                in_comment = False
-        elif char == "{":
-            if current:
-                tokens.append(current)
-                current = ""
-            current = "{"
-            in_comment = True
-        elif char in "()":
-            if current:
-                tokens.append(current)
-                current = ""
-            tokens.append(char)
-        elif char.isspace():
-            if current:
-                tokens.append(current)
-                current = ""
-        else:
-            current += char
-
-    if current:
-        tokens.append(current)
-
-    return tokens
-
-
 def scan_headers(handle: TextIO) -> Iterator[Headers]:
     """
     Scan a PGN file and yield game headers without parsing moves.
     Much faster for indexing large PGN files.
     """
     headers = {}
-    header_pattern = re.compile(r'\[(\w+)\s+"([^"]*)"\]')
 
     for line in handle:
         line = line.strip()
 
         if line.startswith("["):
-            match = header_pattern.match(line)
+            match = HEADER_PATTERN.match(line)
             if match:
                 headers[match.group(1)] = match.group(2)
         elif headers:

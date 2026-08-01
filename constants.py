@@ -1,9 +1,18 @@
-"""
-Mint's Lab Chess Library - Core Constants
-Custom chess library tailored for Mint's Lab NodeBased project.
-"""
+"""Core constants. The square and piece helpers come from `_core`."""
 
 from typing import Dict
+
+from ._core import (
+    square,
+    square_file,
+    square_rank,
+    square_name,
+    parse_square,
+    square_distance,
+    square_mirror,
+    piece_symbol,
+    piece_name,
+)
 
 WHITE: bool = True
 BLACK: bool = False
@@ -63,52 +72,6 @@ RANK_NAMES = "12345678"
 
 # Square names mapping
 SQUARE_NAMES = [f + r for r in RANK_NAMES for f in FILE_NAMES]
-
-def square(file_index: int, rank_index: int) -> int:
-    """Create a square index from file and rank indices (0-7)."""
-    return rank_index * 8 + file_index
-
-
-def square_file(sq: int) -> int:
-    """Get the file index (0-7) of a square."""
-    return sq & 7
-
-
-def square_rank(sq: int) -> int:
-    """Get the rank index (0-7) of a square."""
-    return sq >> 3
-
-
-def square_name(sq: int) -> str:
-    """Get the algebraic name of a square (e.g., 'e4')."""
-    return SQUARE_NAMES[sq]
-
-
-def parse_square(name: str) -> int:
-    """Parse a square name (e.g., 'e4') to a square index."""
-    return FILE_NAMES.index(name[0]) + RANK_NAMES.index(name[1]) * 8
-
-
-def square_distance(sq1: int, sq2: int) -> int:
-    """Get the Chebyshev distance between two squares."""
-    return max(abs(square_file(sq1) - square_file(sq2)),
-               abs(square_rank(sq1) - square_rank(sq2)))
-
-
-def square_mirror(sq: int) -> int:
-    """Mirror square vertically (flip rank)."""
-    return sq ^ 56
-
-
-def piece_symbol(piece_type: int) -> str:
-    """Get the symbol for a piece type (lowercase)."""
-    return PIECE_SYMBOLS.get(piece_type, "")
-
-
-def piece_name(piece_type: int) -> str:
-    """Get the name for a piece type."""
-    return PIECE_NAMES.get(piece_type, "")
-
 
 # Knight move offsets
 KNIGHT_MOVES = (-17, -15, -10, -6, 6, 10, 15, 17)

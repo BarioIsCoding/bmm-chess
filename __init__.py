@@ -22,8 +22,23 @@ Usage:
         print(move.uci())
 """
 
-__version__ = "1.0.0"
+__version__ = "2.0.0"
 __author__ = "Mint's Lab Project"
+
+# The native core is mandatory: a missing extension is an error, not a cue to
+# fall back. importlib, because `from . import _core` misreports the failure as
+# a circular import.
+try:
+    import importlib as _importlib
+
+    _core = _importlib.import_module("._core", __name__)
+except ImportError as exc:  # pragma: no cover - build-time failure path
+    raise ImportError(
+        "bmm_chess requires its native core extension, which is not built.\n"
+        "Build it with:\n"
+        "    python bmm_chess/build_core.py\n"
+        f"(underlying error: {exc})"
+    ) from exc
 
 from .constants import (
     WHITE,
@@ -80,7 +95,53 @@ from .constants import (
 
 from .piece import Piece
 from .move import Move
-from .board import Board, SquareSet, LegalMoveGenerator
+from .board import Board, SquareSet, LegalMoveGenerator, perft
+
+from ._core import (
+    lsb,
+    msb,
+    popcount,
+    scan_forward,
+    scan_reversed,
+    between,
+    ray,
+    square_manhattan_distance,
+    square_knight_distance,
+
+    shift_up, shift_2_up, shift_down, shift_2_down,
+    shift_left, shift_2_left, shift_right, shift_2_right,
+    shift_up_left, shift_up_right, shift_down_left, shift_down_right,
+
+    flip_vertical, flip_horizontal, flip_diagonal, flip_anti_diagonal,
+
+    zobrist_hash,
+
+    BB_EMPTY, BB_ALL, BB_SQUARES, BB_FILES, BB_RANKS,
+    BB_LIGHT_SQUARES, BB_DARK_SQUARES, BB_BACKRANKS, BB_CORNERS, BB_CENTER,
+
+    STATUS_VALID,
+    STATUS_NO_WHITE_KING,
+    STATUS_NO_BLACK_KING,
+    STATUS_TOO_MANY_KINGS,
+    STATUS_TOO_MANY_WHITE_PAWNS,
+    STATUS_TOO_MANY_BLACK_PAWNS,
+    STATUS_PAWNS_ON_BACKRANK,
+    STATUS_TOO_MANY_WHITE_PIECES,
+    STATUS_TOO_MANY_BLACK_PIECES,
+    STATUS_BAD_CASTLING_RIGHTS,
+    STATUS_INVALID_EP_SQUARE,
+    STATUS_OPPOSITE_CHECK,
+    STATUS_EMPTY,
+    STATUS_TOO_MANY_CHECKERS,
+    STATUS_IMPOSSIBLE_CHECK,
+
+    InvalidMoveError,
+    IllegalMoveError,
+    AmbiguousMoveError,
+)
+
+from . import polyglot
+from .polyglot import open_reader
 
 from . import pgn
 from .pgn import (
@@ -163,6 +224,52 @@ __all__ = [
     "Board",
     "SquareSet",
     "LegalMoveGenerator",
+    "perft",
+
+    "lsb",
+    "msb",
+    "popcount",
+    "scan_forward",
+    "scan_reversed",
+    "between",
+    "ray",
+    "square_manhattan_distance",
+    "square_knight_distance",
+
+    "shift_up", "shift_2_up", "shift_down", "shift_2_down",
+    "shift_left", "shift_2_left", "shift_right", "shift_2_right",
+    "shift_up_left", "shift_up_right", "shift_down_left", "shift_down_right",
+
+    "flip_vertical", "flip_horizontal", "flip_diagonal", "flip_anti_diagonal",
+
+    "zobrist_hash",
+
+    "BB_EMPTY", "BB_ALL", "BB_SQUARES", "BB_FILES", "BB_RANKS",
+    "BB_LIGHT_SQUARES", "BB_DARK_SQUARES", "BB_BACKRANKS", "BB_CORNERS",
+    "BB_CENTER",
+
+    "STATUS_VALID",
+    "STATUS_NO_WHITE_KING",
+    "STATUS_NO_BLACK_KING",
+    "STATUS_TOO_MANY_KINGS",
+    "STATUS_TOO_MANY_WHITE_PAWNS",
+    "STATUS_TOO_MANY_BLACK_PAWNS",
+    "STATUS_PAWNS_ON_BACKRANK",
+    "STATUS_TOO_MANY_WHITE_PIECES",
+    "STATUS_TOO_MANY_BLACK_PIECES",
+    "STATUS_BAD_CASTLING_RIGHTS",
+    "STATUS_INVALID_EP_SQUARE",
+    "STATUS_OPPOSITE_CHECK",
+    "STATUS_EMPTY",
+    "STATUS_TOO_MANY_CHECKERS",
+    "STATUS_IMPOSSIBLE_CHECK",
+
+    "InvalidMoveError",
+    "IllegalMoveError",
+    "AmbiguousMoveError",
+
+    "polyglot",
+    "open_reader",
 
     "pgn",
     "Game",

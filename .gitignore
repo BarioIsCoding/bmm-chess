@@ -1,0 +1,11 @@
+# Native core build artifacts. The .pyd/.so is built per platform and per
+# Python version; everyone builds their own with build_core.py.
+_build/
+*.pyd
+*.pyd.old
+*.so
+*.o
+*.obj
+
+__pycache__/
+*.pyc
