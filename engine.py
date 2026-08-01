@@ -220,19 +220,28 @@ class SimpleEngine:
         info: Optional[Callable[[EngineInfo], None]] = None
     ) -> EngineInfo:
         """
-        Analyse a position.
+        Analyse a position and return the engine's final info line.
 
         Args:
-            multipv: Number of principal variations to request
+            multipv: Not supported; only 1 is accepted. See below.
             info: Callback invoked for each info line
+
+        Collecting several principal variations needs one EngineInfo per
+        multipv index, which this returns-a-single-object signature cannot
+        express. Rather than set the option and hand back whichever line
+        happened to arrive last, it refuses. Use `info=` to see every line.
         """
+        if multipv != 1:
+            raise NotImplementedError(
+                "analyse() cannot return multiple principal variations. "
+                "Pass info= to receive every info line as it arrives, or drive "
+                "the engine directly with configure() and _send()."
+            )
+
         self._info = EngineInfo()
         self._info_callback = info
 
         self._send(f"position fen {board.fen()}")
-
-        if multipv > 1:
-            self._send(f"setoption name MultiPV value {multipv}")
 
         go_cmd = self._build_go_command(limit, board)
         self._send(go_cmd)
