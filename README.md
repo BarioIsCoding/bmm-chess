@@ -38,13 +38,6 @@ driving the loop, and that costs you 10x in interpreter overhead. The middle row
 ordinary code gets, so **27x is the honest apples-to-apples number**; the top row is a
 bonus for the one case where you can hand the whole search down to C at once.
 
-Intel i9-9900K, Windows 11, CPython 3.11.9, python-chess 1.11.2. Your absolute numbers
-will differ; the ratios shouldn't move much. Reproduce the whole table with:
-
-```bash
-python -m bmm_chess.selftest compare
-```
-
 The gap is widest where python-chess has to build Python objects (FEN strings, piece
 maps, whole boards) and narrowest where it was already doing bitboard work. `piece_map()`
 is the floor at 16x, because both libraries end up allocating 32 objects and a dict, and
@@ -188,11 +181,6 @@ Move generators are easy to write and hard to trust. Three independent checks:
 **Perft.** The full Chess Programming Wiki suite — startpos, Kiwipete, positions 3
 through 6 — at every published depth. 610,195,852 nodes, exact match.
 
-**A behavioural signature.** `selftest sig` walks a ~100k-node tree and hashes every FEN,
-every SAN and every UCI it produces. python-chess walking the same tree produces the same
-MD5, byte for byte. That pins behaviour to a second implementation instead of to whatever
-this library happened to do the day the test was written.
-
 **Differential testing.** ~50,000 positions compared against python-chess across legal
 move sets, SAN both directions, attack and pin masks on all 64 squares for both colours,
 FEN, EPD, status flags, filtered generation, and every move predicate. Zero divergences
@@ -201,12 +189,6 @@ that aren't documented above.
 Zobrist hashing is checked against the nine test vectors published with the PolyGlot
 format, and book lookups are compared entry-for-entry against `chess.polyglot` on real
 books.
-
-```bash
-python -m bmm_chess.selftest              # everything, ~4s
-python -m bmm_chess.selftest invariants   # quick, skips deep perft
-python -m bmm_chess.selftest features     # status, pins, EPD, books
-```
 
 Run the last two before you commit anything. Run the first before you tag.
 
@@ -243,10 +225,6 @@ if someone wants it.
 ## Working on it
 
 The interesting code is `_core.c`. Rebuild after any change:
-
-```bash
-python bmm_chess/build_core.py && python -m bmm_chess.selftest
-```
 
 `board.py`, `move.py` and `piece.py` are three-line re-export shims that keep the old
 import paths alive. Don't put logic in them. `pgn.py`, `engine.py` and `polyglot.py` are
